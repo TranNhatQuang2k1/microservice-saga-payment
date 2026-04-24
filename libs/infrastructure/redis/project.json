@@ -1,0 +1,12 @@
+{
+  "name": "@order-payment-platform/infrastructure-redis",
+  "targets": {
+    "build": {
+      "outputs": [
+        "{projectRoot}/dist/index.js",
+        "{projectRoot}/dist/**/*.{js,cjs,mjs,jsx,d.ts,d.cts,d.mts}{,.map}",
+        "{projectRoot}/dist/tsconfig.lib.tsbuildinfo"
+      ]
+    }
+  }
+}
