@@ -2,5 +2,24 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./apps/api-gateway-e2e"
+    },
+    {
+      "path": "./apps/api-gateway"
+    },
+    {
+      "path": "./libs/interfaces"
+    },
+    {
+      "path": "./libs/configurations"
+    },
+    {
+      "path": "./libs/retrystrategies"
+    },
+    {
+      "path": "./libs/infrastructure/redis"
+    }
+  ]
 }

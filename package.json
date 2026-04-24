@@ -4,18 +4,52 @@
   "license": "MIT",
   "scripts": {},
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "@fastify/autoload": "~6.0.3",
+    "@fastify/sensible": "~6.0.2",
+    "axios": "^1.6.0",
+    "fastify": "~5.2.1",
+    "fastify-plugin": "~5.0.1",
+    "msgpackr": "^1.11.10",
+    "tiny-lru": "^11.2.5"
+  },
   "devDependencies": {
+    "@eslint/js": "^9.8.0",
+    "@nx/esbuild": "22.6.5",
+    "@nx/eslint": "22.6.5",
+    "@nx/eslint-plugin": "22.6.5",
+    "@nx/jest": "22.6.5",
     "@nx/js": "22.6.5",
+    "@nx/node": "^22.6.5",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.8",
     "@swc/helpers": "0.5.18",
+    "@swc/jest": "~0.2.38",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.6.0",
+    "esbuild": "^0.27.0",
+    "eslint": "^9.8.0",
+    "eslint-config-prettier": "^10.0.0",
+    "ioredis": "^5.10.1",
+    "jest": "^30.0.2",
+    "jest-environment-node": "^30.0.2",
+    "jest-util": "^30.0.2",
+    "jsonc-eslint-parser": "^2.1.0",
     "nx": "22.6.5",
     "prettier": "^3.8.1",
+    "ts-jest": "^29.4.0",
+    "ts-node": "10.9.1",
     "tslib": "^2.3.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.40.0",
+    "zod": "^4.3.6"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*",
+    "libs/interfaces",
+    "libs/configurations",
+    "libs/retrystrategies",
+    "libs/infrastructure/*"
   ]
 }

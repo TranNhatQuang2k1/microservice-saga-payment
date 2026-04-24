@@ -16,6 +16,16 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["@org/source"]
+    "customConditions": ["@org/source"],
+    "baseUrl": ".",
+    "paths": {
+      "@org/retrystrategies": ["libs/retrystrategies/src/index.ts"],
+      "@org/retrystrategies/*": ["libs/retrystrategies/src/lib/*"],
+      "@org/interfaces": ["libs/interfaces/src/index.ts"],
+      "@org/interfaces/*": ["libs/interfaces/src/lib/*"],
+      "@org/configurations": ["libs/configurations/src/index.ts"],
+      "@org/configurations/*": ["libs/configurations/src/lib/*"],
+      "@order-payment-platform/infrastructure-redis": ["libs/infrastructure/redis/src/index.ts"]
+    }
   }
 }
