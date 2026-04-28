@@ -1,12 +1,9 @@
 {
-  "name": "@org/retrystrategies",
+  "name": "@org/caches",
   "version": "0.0.1",
-  "private": true,
-  "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-
+  "type": "module",
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -16,9 +13,16 @@
       "default": "./dist/index.js"
     }
   },
-  "sideEffects": false,
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
   "dependencies": {
     "tslib": "^2.3.0",
-    "@org/interfaces": "0.0.1"
+    "tiny-lru": "^11.2.5",
+    "msgpackr": "^1.11.10",
+    "ioredis": "^5.10.1",
+    "@org/configurations": "0.0.1",
+    "@order-payment-platform/infrastructure-redis": "0.0.1"
   }
 }

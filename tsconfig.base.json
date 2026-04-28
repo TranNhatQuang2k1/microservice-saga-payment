@@ -25,6 +25,8 @@
       "@org/interfaces/*": ["libs/interfaces/src/lib/*"],
       "@org/configurations": ["libs/configurations/src/index.ts"],
       "@org/configurations/*": ["libs/configurations/src/lib/*"],
+      "@org/caches": ["libs/caches/src/index.ts"],
+      "@org/caches/*": ["libs/caches/src/lib/*"],
       "@order-payment-platform/infrastructure-redis": ["libs/infrastructure/redis/src/index.ts"]
     }
   }

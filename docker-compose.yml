@@ -1,0 +1,185 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------
+  # 1. PostgreSQL Primary (Ghi)
+  # ----------------------------------------
+  pg-primary:
+    image: bitnami/postgresql:latest
+    container_name: pg-primary
+    environment:
+      # Cấu hình tài khoản app
+      - POSTGRESQL_USERNAME=convoy_user
+      - POSTGRESQL_PASSWORD=convoy_pass
+      - POSTGRESQL_DATABASE=convoy
+      # Cấu hình Replication (Master)
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
+    volumes:
+      - pg_primary_data:/bitnami/postgresql
+    networks:
+      - db-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U convoy_user -d convoy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------
+  # 2. PostgreSQL Read Replica (Đọc)
+  # ----------------------------------------
+  pg-replica:
+    image: bitnami/postgresql:latest
+    container_name: pg-replica
+    depends_on:
+      pg-primary:
+        condition: service_healthy
+    environment:
+      - POSTGRESQL_USERNAME=convoy_user
+      - POSTGRESQL_PASSWORD=convoy_pass
+      - POSTGRESQL_DATABASE=convoy
+      # Cấu hình Replication (Slave trỏ về Master)
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_MASTER_HOST=pg-primary
+      - POSTGRESQL_MASTER_PORT_NUMBER=5432
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
+    volumes:
+      - pg_replica_data:/bitnami/postgresql
+    networks:
+      - db-network
+
+  # ----------------------------------------
+  # 3. PgBouncer cho Primary (Port 6432)
+  # ----------------------------------------
+  pgbouncer-primary:
+    image: edoburu/pgbouncer:latest
+    container_name: pgbouncer-primary
+    depends_on:
+      pg-primary:
+        condition: service_healthy
+    environment:
+      # Chú ý: edoburu dùng DATABASE_URL và các biến không có tiền tố
+      - DATABASE_URL=postgres://convoy_user:convoy_pass@pg-primary:5432/convoy
+      - DB_HOST=pg-primary
+      - DB_USER=convoy_user
+      - DB_PASSWORD=convoy_pass
+      - DB_NAME=convoy
+      - AUTH_TYPE=scram-sha-256 # <-- CHỐT CHẶN NẰM Ở ĐÂY
+      - POOL_MODE=transaction
+      - IGNORE_STARTUP_PARAMETERS=extra_float_digits
+      - MAX_CLIENT_CONN=1000
+      - DEFAULT_POOL_SIZE=50
+    ports:
+      - "6432:5432" # Ánh xạ port 6432 bên ngoài vào 5432 bên trong container
+    networks:
+      - db-network
+
+  # ----------------------------------------
+  # 4. PgBouncer cho Replica (Port 6433)
+  # ----------------------------------------
+  pgbouncer-replica:
+    image: edoburu/pgbouncer:latest
+    container_name: pgbouncer-replica
+    depends_on:
+      - pg-replica
+    environment:
+      - DATABASE_URL=postgres://convoy_user:convoy_pass@pg-replica:5432/convoy
+      - DB_HOST=pg-replica
+      - DB_USER=convoy_user
+      - DB_PASSWORD=convoy_pass
+      - DB_NAME=convoy
+      - AUTH_TYPE=scram-sha-256 # <-- CHỐT CHẶN NẰM Ở ĐÂY
+      - POOL_MODE=transaction
+      - IGNORE_STARTUP_PARAMETERS=extra_float_digits
+      - MAX_CLIENT_CONN=1000
+      - DEFAULT_POOL_SIZE=50
+    ports:
+      - "6433:5432" # Ánh xạ port 6433 bên ngoài vào 5432 bên trong container
+    networks:
+      - db-network
+  # ----------------------------------------
+  # 5. pgAdmin4 - Giao diện quản lý UI
+  # ----------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@convoy.com # Tài khoản đăng nhập UI
+      - PGADMIN_DEFAULT_PASSWORD=admin         # Mật khẩu đăng nhập UI
+    ports:
+      - "5050:80" # Truy cập ở local qua port 5050
+    networks:
+      - db-network
+    depends_on:
+      - pg-primary
+      - pg-replica
+
+  # ----------------------------------------
+  # 6. k6 Load Tester
+  # Chạy: docker compose --profile load-test up k6
+  # ----------------------------------------
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-load-test
+    profiles: ["load-test"]
+    volumes:
+      - ./apps/auth/test/load:/scripts
+    environment:
+      # host.docker.internal → trỏ ra auth server đang chạy trên máy host
+      - BASE_URL=http://172.19.128.1:5005
+      - SEED_COUNT=10
+      - STAGE=full          # đổi thành "smoke" để test nhanh
+    command: run /scripts/login.js
+    networks:
+      - db-network
+
+networks:
+  db-network:
+    driver: bridge
+
+volumes:
+  pg_primary_data:
+  pg_replica_data:
+
+# 2. Cách truy cập và kết nối Database
+# Sau khi container chạy xong, cậu làm theo các bước sau:
+
+# Bước 1: Mở trình duyệt, vào địa chỉ: http://localhost:5050
+# Bước 2: Đăng nhập bằng tài khoản cậu vừa cấu hình:
+
+# Email: admin@convoy.com
+
+# Password: admin
+
+# Bước 3: Thêm Primary DB vào UI
+
+# Nhấp chuột phải vào mục Servers ở cột bên trái -> Chọn Register -> Server...
+
+# Tab General: Đặt tên là Convoy - Primary
+
+# Tab Connection:
+
+# Host name/address: pg-primary (Cực kỳ lưu ý: Điền tên container, không điền localhost)
+
+# Port: 5432
+
+# Maintenance database: convoy
+
+# Username: convoy_user
+
+# Password: convoy_pass
+
+# Bấm Save.
+
+# Bước 4: Thêm Read Replica DB vào UI
+# Làm tương tự bước 3, nhưng thay đổi thông tin:
+
+# Tab General: Đặt tên là Convoy - Replica
+
+# Tab Connection:
+
+# Host name/address: pg-replica
+
+# Các thông tin Port, Database, Username, Password giữ nguyên như trên.

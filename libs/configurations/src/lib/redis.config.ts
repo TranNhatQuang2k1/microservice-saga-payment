@@ -15,12 +15,12 @@ export const RedisSecureScheme   = 'rediss';
 export const RedisConfigSchema = z
   .object({
     // connection
-    SCHEME:   z.enum(['redis', 'rediss', 'redis-sentinel']).default('redis'),
-    HOST:     z.string().default('localhost'),
-    PORT:     z.coerce.number().int().positive().default(6379),
-    USERNAME: z.string().default(''),
-    PASSWORD: z.string().default(''),
-    DATABASE: z.string().default(''),
+    SCHEME:         z.enum(['redis', 'rediss', 'redis-sentinel']).default('redis'),
+    HOST:           z.string().default('localhost'),
+    PORT:           z.coerce.number().int().positive().default(6379),
+    REDIS_USERNAME: z.string().default(''),
+    REDIS_PASSWORD: z.string().default(''),
+    DATABASE:       z.string().default(''),
 
     // cluster: comma-separated addresses, e.g. "host1:6379,host2:6379"
     CLUSTER_ADDRESSES: z.string().default(''),
@@ -159,8 +159,8 @@ export function loadRedisConfig(env: NodeJS.ProcessEnv = process.env): RedisConf
     scheme:           e.SCHEME,
     host:             e.HOST,
     port:             e.PORT,
-    username:         e.USERNAME,
-    password:         e.PASSWORD,
+    username:         e.REDIS_USERNAME,
+    password:         e.REDIS_PASSWORD,
     database:         e.DATABASE,
     addresses:        e.CLUSTER_ADDRESSES,
     masterName:       e.SENTINEL_MASTER_NAME,

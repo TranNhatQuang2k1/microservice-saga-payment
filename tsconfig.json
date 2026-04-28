@@ -4,9 +4,6 @@
   "files": [],
   "references": [
     {
-      "path": "./apps/api-gateway-e2e"
-    },
-    {
       "path": "./apps/api-gateway"
     },
     {
@@ -20,6 +17,12 @@
     },
     {
       "path": "./libs/infrastructure/redis"
+    },
+    {
+      "path": "./apps/auth"
+    },
+    {
+      "path": "./libs/caches"
     }
   ]
 }

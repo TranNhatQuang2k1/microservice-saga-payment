@@ -2,8 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "types": ["node"],
+    "rootDir": "src",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
     "customConditions": [],
     "composite": false,
@@ -25,10 +25,13 @@
   ],
   "references": [
     {
-      "path": "../../libs/configurations/tsconfig.lib.json"
+      "path": "../../libs/infrastructure/redis/tsconfig.lib.json"
     },
     {
       "path": "../../libs/caches/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/configurations/tsconfig.lib.json"
     }
   ]
 }

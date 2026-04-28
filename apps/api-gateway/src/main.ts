@@ -1,41 +1,36 @@
 import Fastify from 'fastify';
 import { app } from './app/app';
-import { newRedisCache, newCache } from './cache/redis/client';
-import { loadRedisConfig } from '@org/configurations';
+import { newCache } from '@org/caches';
+import { loadRedisConfig, loadServerConfig } from '@org/configurations';
 
+const serverCfg = loadServerConfig();
 const host = process.env.HOST ?? 'localhost';
-const port = process.env.PORT ? Number(process.env.PORT) : 3008;
+const port = serverCfg.http.port;
 
 const server = Fastify({ logger: true });
 
-// --- smoke test Redis cache ---
-async function testCache() {
-  const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
-  const cache = newRedisCache([REDIS_URL]);
-
-  await cache.set('hello', { msg: 'world', ts: Date.now() }, 60_000);
-  const hit = await cache.get<{ msg: string; ts: number }>('hello');
-  console.log('[cache] set/get OK →', hit);
-
-  await cache.delete('hello');
-  const miss = await cache.get('hello');
-  console.log('[cache] delete OK → miss:', miss);
-}
-
-testCache().catch((err) => console.error('[cache] error:', err));
-
-// --- smoke test Redis cache từ RedisConfiguration ---
 async function testCacheFromConfig() {
-  const cfg   = loadRedisConfig(process.env);
-  const cache = newCache(cfg);
+  const cache = newCache(loadRedisConfig());
 
-  await cache.set('cfg-hello', { msg: 'from config', ts: Date.now() }, 60_000);
+  let t = performance.now();
+  await cache.set('cfg-hello', { msg: 'from config', ts: Date.now() }, 60);
+  console.log(`[cache-cfg] set       → ${(performance.now() - t).toFixed(2)}ms`);
+
+  t = performance.now();
   const hit = await cache.get<{ msg: string; ts: number }>('cfg-hello');
-  console.log('[cache-cfg] set/get OK →', hit);
+  console.log(`[cache-cfg] get (hit) → ${(performance.now() - t).toFixed(2)}ms`, hit);
 
+  t = performance.now();
+  const hitRam = await cache.get<{ msg: string; ts: number }>('cfg-hello');
+  console.log(`[cache] get (L1 hit)  → ${(performance.now() - t).toFixed(2)}ms`, hitRam);
+
+  t = performance.now();
   await cache.delete('cfg-hello');
+  console.log(`[cache-cfg] delete    → ${(performance.now() - t).toFixed(2)}ms`);
+
+  t = performance.now();
   const miss = await cache.get('cfg-hello');
-  console.log('[cache-cfg] delete OK → miss:', miss);
+  console.log(`[cache-cfg] get (miss)→ ${(performance.now() - t).toFixed(2)}ms`, miss);
 }
 
 testCacheFromConfig().catch((err) => console.error('[cache-cfg] error:', err));
