@@ -9,11 +9,13 @@ export const AuthConfigSchema = z.object({
   NATIVE_REALM_ENABLED: z.coerce.boolean().default(true),
 
   // JWT realm
-  JWT_REALM_ENABLED:  z.coerce.boolean().default(true),
-  JWT_SECRET:         z.string().default(''),
-  JWT_EXPIRY:         z.coerce.number().int().default(0),
-  JWT_REFRESH_SECRET: z.string().default(''),
-  JWT_REFRESH_EXPIRY: z.coerce.number().int().default(0),
+  JWT_REALM_ENABLED:            z.coerce.boolean().default(true),
+  JWT_RSA_PRIVATE_KEY:          z.string().default(''),
+  JWT_RSA_PUBLIC_KEY:           z.string().default(''),
+  JWT_EXPIRY:                   z.coerce.number().int().default(0),
+  JWT_RSA_REFRESH_PRIVATE_KEY:  z.string().default(''),
+  JWT_RSA_REFRESH_PUBLIC_KEY:   z.string().default(''),
+  JWT_REFRESH_EXPIRY:           z.coerce.number().int().default(0),
 
   // Portal realm
   PORTAL_REALM_ENABLED: z.coerce.boolean().default(true),
@@ -40,11 +42,13 @@ export interface NativeRealmOptions {
 }
 
 export interface JwtRealmOptions {
-  enabled:        boolean;
-  secret:         string;
-  expiry:         number;
-  refreshSecret:  string;
-  refreshExpiry:  number;
+  enabled:            boolean;
+  privateKey:         string;
+  publicKey:          string;
+  expiry:             number;
+  refreshPrivateKey:  string;
+  refreshPublicKey:   string;
+  refreshExpiry:      number;
 }
 
 export interface PortalRealmOptions {
@@ -92,11 +96,13 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig
       enabled: e.NATIVE_REALM_ENABLED,
     },
     jwt: {
-      enabled:       e.JWT_REALM_ENABLED,
-      secret:        e.JWT_SECRET,
-      expiry:        e.JWT_EXPIRY,
-      refreshSecret: e.JWT_REFRESH_SECRET,
-      refreshExpiry: e.JWT_REFRESH_EXPIRY,
+      enabled:           e.JWT_REALM_ENABLED,
+      privateKey:        e.JWT_RSA_PRIVATE_KEY,
+      publicKey:         e.JWT_RSA_PUBLIC_KEY,
+      expiry:            e.JWT_EXPIRY,
+      refreshPrivateKey: e.JWT_RSA_REFRESH_PRIVATE_KEY,
+      refreshPublicKey:  e.JWT_RSA_REFRESH_PUBLIC_KEY,
+      refreshExpiry:     e.JWT_REFRESH_EXPIRY,
     },
     portal: {
       enabled: e.PORTAL_REALM_ENABLED,

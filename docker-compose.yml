@@ -12,6 +12,7 @@ services:
       - POSTGRESQL_USERNAME=convoy_user
       - POSTGRESQL_PASSWORD=convoy_pass
       - POSTGRESQL_DATABASE=convoy
+      - POSTGRESQL_POSTGRES_PASSWORD=postgres_admin
       # Cấu hình Replication (Master)
       - POSTGRESQL_REPLICATION_MODE=master
       - POSTGRESQL_REPLICATION_USER=repl_user
@@ -117,7 +118,90 @@ services:
       - pg-replica
 
   # ----------------------------------------
-  # 6. k6 Load Tester
+  # 6. Prometheus — scrape metrics từ auth app
+  # ----------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - db-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ----------------------------------------
+  # 7. Grafana — dashboard UI
+  # Truy cập: http://localhost:3000  (admin / admin)
+  # ----------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/auth-nodejs.json
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - db-network
+    depends_on:
+      - prometheus
+
+  # ----------------------------------------
+  # 8. postgres_exporter — scrape pg_stat_* từ Primary
+  # Metrics: cache hit ratio, locks, deadlocks, replication lag, transactions
+  # ----------------------------------------
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://convoy_user:convoy_pass@pg-primary:5432/convoy?sslmode=disable
+      - PG_EXPORTER_AUTO_DISCOVER_DATABASES=true
+    ports:
+      - "9187:9187"
+    networks:
+      - db-network
+    depends_on:
+      pg-primary:
+        condition: service_healthy
+
+  # ----------------------------------------
+  # 9. cAdvisor — CPU/memory của từng Docker container
+  # Metrics: container_cpu_usage_seconds_total, container_memory_usage_bytes
+  # ----------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - db-network
+
+  # ----------------------------------------
+  # 10. k6 Load Tester
   # Chạy: docker compose --profile load-test up k6
   # ----------------------------------------
   k6:
@@ -142,6 +226,8 @@ networks:
 volumes:
   pg_primary_data:
   pg_replica_data:
+  prometheus_data:
+  grafana_data:
 
 # 2. Cách truy cập và kết nối Database
 # Sau khi container chạy xong, cậu làm theo các bước sau:

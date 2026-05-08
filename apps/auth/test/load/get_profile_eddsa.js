@@ -40,9 +40,15 @@ const PROFILES = {
     executor:        'constant-arrival-rate',
     rate:            1100,
     timeUnit:        '1s',
-    duration:        '10s',
+    duration:        '1s',
     preAllocatedVUs: 500,
     maxVUs:          1000,
+  },
+  stampede_test: {
+    executor: 'per-vu-iterations',
+    vus: 200,        // Tạo ra 300 user ảo đứng chờ sẵn
+    iterations: 1,    // Mỗi user chỉ bắn ĐÚNG 1 request rồi nghỉ
+    maxDuration: '10s', // Thời gian tối đa chờ server trả lời hết đống này
   },
 };
 
@@ -64,8 +70,8 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:5005';
 
 export function setup() {
   const res = http.post(
-    `${BASE_URL}/auth/login`,
-    JSON.stringify({ username: 'loadtest_1@example.com', password: 'Password@123' }),
+    `${BASE_URL}/auth/loginJwtEdDSA`,
+    JSON.stringify({ username: 'loadtest_4@example.com', password: 'Password@123' }),
     { headers: { 'Content-Type': 'application/json' } },
   );
 
@@ -78,7 +84,7 @@ export function setup() {
 }
 
 export default function (data) {
-  const res = http.get(`${BASE_URL}/user/profile`, {
+  const res = http.get(`${BASE_URL}/user/profileEddsa`, {
     headers: { Authorization: `Bearer ${data.token}` },
   });
 

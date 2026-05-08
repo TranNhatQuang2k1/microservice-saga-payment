@@ -33,11 +33,11 @@ const cachePlugin: FastifyPluginAsync<CachePluginOptions> = async (fastify, opts
       cache = newRedisCacheFromClient(client);
 
       fastify.addHook('onClose', async () => {
-        fastify.log.info('Closing Redis connection...');
+        console.log('Closing Redis connection...');
         await client.quit();
         fastify.log.info('Redis connection closed');
       });
-
+      fastify.log.info('Redis connection haha');
       break;
     }
 

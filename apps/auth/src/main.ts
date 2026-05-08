@@ -24,6 +24,7 @@ const startServer = async () => {
    });
   const server = Fastify({
     loggerInstance: logger,
+    disableRequestLogging: false,
     ajv: {
       customOptions: {
         coerceTypes:          false, // don't silently cast 1 → "1"

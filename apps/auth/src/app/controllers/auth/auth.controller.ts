@@ -4,7 +4,7 @@ import { ServiceError } from '../../services/erorrs/errors'
 
 
 export function createAuthControllers(fastify: FastifyInstance) {
-  const loginService = new LoginUserService({ userRepo: fastify.userRepo, jwt: fastify.jwtAuth })
+  const loginService = new LoginUserService({ userRepo: fastify.userRepo, jwt: fastify.jwtAuth, jwtEdDSA: fastify.jwtEdDSA })
   const rfService    = new RefreshTokenService({ userRepo: fastify.userRepo, jwt: fastify.jwtAuth })
   const lgService    = new LogoutUserService({ jwt: fastify.jwtAuth })
 
@@ -23,6 +23,35 @@ export function createAuthControllers(fastify: FastifyInstance) {
             firstName: user.firstName,
             lastName:  user.lastName,
             email:     user.email,
+          },
+          token,
+        },
+      })
+    } catch (err) {
+      if (err instanceof ServiceError) {
+        return reply.code(403).send({ status: 'error', message: 'Invalid credentials' })
+      }
+      fastify.log.error(err)
+      return reply.code(500).send({ status: 'error', message: 'Service temporarily unavailable' })
+    }
+  }
+
+  const loginJwtEdDSA = async (
+    request: FastifyRequest<{ Body: LoginUserData }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const { user, token } = await loginService.runJwtEdDSA(request.body)
+      return reply.code(200).send({
+        status: 'success',
+        message: 'Login successful',
+        data: {
+          user: {
+            uid:       user.uid,
+            firstName: user.firstName,
+            lastName:  user.lastName,
+            email:     user.email,
+            eddsa: true,
           },
           token,
         },
@@ -77,5 +106,5 @@ export function createAuthControllers(fastify: FastifyInstance) {
     }
   }
 
-  return { login, refreshToken, logout }
+  return { login, loginJwtEdDSA, refreshToken, logout }
 }

@@ -8,4 +8,5 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.post('/register', { schema: registerSchema }, register)
   fastify.get('/me', { preHandler: fastify.requireAuth }, getProfile)
   fastify.get('/profile', { preHandler: fastify.decodeAuth }, getTokenProfile)
+  fastify.get('/profileEddsa', { preHandler: fastify.decodeEdDSA }, getTokenProfile)
 }

@@ -25,6 +25,9 @@ export interface PostgresDb {
 
   /** Raw primary pool — dùng khi cần transaction (pool.connect() → client.query()) */
   pool: Pool;
+
+  /** Replica pools — exposed cho metrics collection */
+  replicaPools: Pool[];
 }
 
 declare module 'fastify' {
@@ -134,9 +137,10 @@ const postgresPlugin: FastifyPluginAsync<PostgresPluginOptions> = async (fastify
   }
 
   const db: PostgresDb = {
-    query:      (text, values) => primaryPool.query(text, values as unknown[]),
-    readQuery:  (text, values) => pickReadPool().query(text, values as unknown[]),
-    pool:       primaryPool,
+    query:        (text, values) => primaryPool.query(text, values as unknown[]),
+    readQuery:    (text, values) => pickReadPool().query(text, values as unknown[]),
+    pool:         primaryPool,
+    replicaPools,
   };
 
   fastify.decorate('pg', db);

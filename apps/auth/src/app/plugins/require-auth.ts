@@ -25,9 +25,11 @@ declare module 'fastify' {
 export interface RequireAuthPluginOptions {
   userRepo?: UserRepository
   jwtOptions?: {
-    secret?: string
+    privateKey?: string
+    publicKey?: string
     expiry?: number
-    refreshSecret?: string
+    refreshPrivateKey?: string
+    refreshPublicKey?: string
     refreshExpiry?: number
   }
 }

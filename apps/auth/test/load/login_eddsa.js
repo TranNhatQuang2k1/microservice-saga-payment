@@ -79,7 +79,7 @@ const PROFILES = {
   },
 };
 
-const stage = __ENV.STAGE || 'stable';
+const stage = __ENV.STAGE || 'ramp';
 
 export const options = {
   scenarios: {
@@ -112,7 +112,7 @@ export default function () {
     password: 'Password@123',
   });
 
-  const res = http.post(`${BASE_URL}/auth/login`, body, { headers: HEADERS });
+  const res = http.post(`${BASE_URL}/auth/loginJwtEdDSA`, body, { headers: HEADERS });
 
   // Parse response an toàn
   let json;

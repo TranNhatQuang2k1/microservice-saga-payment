@@ -1,8 +1,10 @@
 import * as jwtLib from 'jsonwebtoken'
 import type { Cache } from '@org/caches'
 import {
-  JWT_DEFAULT_SECRET,
-  JWT_DEFAULT_REFRESH_SECRET,
+  JWT_DEFAULT_PRIVATE_KEY,
+  JWT_DEFAULT_PUBLIC_KEY,
+  JWT_DEFAULT_REFRESH_PRIVATE_KEY,
+  JWT_DEFAULT_REFRESH_PUBLIC_KEY,
   JWT_DEFAULT_EXPIRY,
   JWT_DEFAULT_REFRESH_EXPIRY,
   TOKEN_CACHE_KEY_PREFIX,
@@ -19,9 +21,11 @@ export interface VerifiedToken {
 }
 
 export interface JwtOptions {
-  secret: string
+  privateKey: string
+  publicKey: string
   expiry: number
-  refreshSecret: string
+  refreshPrivateKey: string
+  refreshPublicKey: string
   refreshExpiry: number
 }
 
@@ -45,47 +49,49 @@ export class JwtInvalidError extends Error {
 }
 
 export class Jwt {
-  readonly secret: string
+  readonly privateKey: string
+  readonly publicKey: string
   readonly expiry: number
-  readonly refreshSecret: string
+  readonly refreshPrivateKey: string
+  readonly refreshPublicKey: string
   readonly refreshExpiry: number
   private readonly cache: Cache
 
   constructor(opts: Partial<JwtOptions>, cache: Cache) {
-    this.secret = opts.secret || JWT_DEFAULT_SECRET
+    this.privateKey = opts.privateKey || JWT_DEFAULT_PRIVATE_KEY
+    this.publicKey = opts.publicKey || JWT_DEFAULT_PUBLIC_KEY
     this.expiry = opts.expiry || JWT_DEFAULT_EXPIRY
-    this.refreshSecret = opts.refreshSecret || JWT_DEFAULT_REFRESH_SECRET
+    this.refreshPrivateKey = opts.refreshPrivateKey || JWT_DEFAULT_REFRESH_PRIVATE_KEY
+    this.refreshPublicKey = opts.refreshPublicKey || JWT_DEFAULT_REFRESH_PUBLIC_KEY
     this.refreshExpiry = opts.refreshExpiry || JWT_DEFAULT_REFRESH_EXPIRY
     this.cache = cache
   }
 
   generateToken(user: { uid: string }): Token {
     const now = Math.floor(Date.now() / 1000)
-
     const accessToken = jwtLib.sign(
       { sub: user.uid, iat: now },
-      this.secret,
-      { algorithm: 'HS256', expiresIn: this.expiry }
+      this.privateKey,
+      { algorithm: 'RS256', expiresIn: this.expiry }
     )
-
     const refreshToken = jwtLib.sign(
       { sub: user.uid, iat: now },
-      this.refreshSecret,
-      { algorithm: 'HS256', expiresIn: this.refreshExpiry }
+      this.refreshPrivateKey,
+      { algorithm: 'RS256', expiresIn: this.refreshExpiry }
     )
 
     return { access_token: accessToken, refresh_token: refreshToken }
   }
 
   async validateAccessToken(accessToken: string): Promise<VerifiedToken> {
-    return this.validateToken(accessToken, this.secret)
+    return this.validateToken(accessToken, this.publicKey)
   }
 
   // verifyOnly — verify signature + expiry only, NO blacklist check.
   // Faster than validateAccessToken; trade-off: revoked tokens still pass until natural expiry.
   verifyOnly(token: string): VerifiedToken {
     try {
-      const payload = jwtLib.verify(token, this.secret, { algorithms: ['HS256'] }) as jwtLib.JwtPayload
+      const payload = jwtLib.verify(token, this.publicKey, { algorithms: ['RS256'] }) as jwtLib.JwtPayload
       return {
         userID: payload['sub'] as string,
         expiry: payload['exp'] as number,
@@ -100,7 +106,7 @@ export class Jwt {
   }
 
   async validateRefreshToken(refreshToken: string): Promise<VerifiedToken> {
-    return this.validateToken(refreshToken, this.refreshSecret)
+    return this.validateToken(refreshToken, this.refreshPublicKey)
   }
 
   // Mirrors BlacklistToken: stores base64(token) in cache with remaining TTL
@@ -126,13 +132,13 @@ export class Jwt {
     return exists !== null
   }
 
-  private async validateToken(token: string, secret: string): Promise<VerifiedToken> {
+  private async validateToken(token: string, publicKey: string): Promise<VerifiedToken> {
     const isBlacklisted = await this.isTokenBlacklisted(token)
     if (isBlacklisted) throw new JwtInvalidError()
 
     try {
-      const payload = jwtLib.verify(token, secret, {
-        algorithms: ['HS256'],
+      const payload = jwtLib.verify(token, publicKey, {
+        algorithms: ['RS256'],
       }) as jwtLib.JwtPayload
 
       return {

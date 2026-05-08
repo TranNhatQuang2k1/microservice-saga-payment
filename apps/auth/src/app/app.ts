@@ -1,16 +1,27 @@
+import * as os from 'os';
+const optimalThreads = Math.max(4, os.cpus().length - 3); 
+process.env.UV_THREADPOOL_SIZE = optimalThreads.toString();
+console.log('Số lượng Logical CPU Cores:', os.cpus().length);
+console.log('Thread Pool đang set là:', process.env.UV_THREADPOOL_SIZE || 'Mặc định (4)');
+
 import * as path from 'path';
 import type { FastifyInstance } from 'fastify';
 import AutoLoad from '@fastify/autoload';
 import cachePlugin from './plugins/cache';
 import requireAuth from './plugins/require-auth';
 import postgresPlugin from './plugins/postgres';
+import metricsPlugin from './plugins/metrics';
 import { loadAuthConfig, loadRedisConfig } from '@org/configurations';
 import { loadDatabaseConfig } from '@org/configurations';
 import fp from 'fastify-plugin';
 import { PgUserRepository } from './repository/pg_user_repo'; // Đường dẫn tới file implement Repo của cậu
+import loginEdDSA from './routes/auth/login-eddsa';
 
 export async function app(fastify: FastifyInstance) {
   const authCfg = loadAuthConfig();
+
+  // metrics — registered first to capture hooks for all routes
+  fastify.register(metricsPlugin);
 
   // cache.ts — registered first so fastify.cache is available to all other plugins
   const cacheBackend = (process.env.CACHE_BACKEND as 'redis' | 'memory') ?? 'redis'
@@ -34,18 +45,22 @@ export async function app(fastify: FastifyInstance) {
   // cache.ts / require-auth.ts / postgres.ts — excluded; managed manually above/below
   fastify.register(AutoLoad, {
     dir: path.join(__dirname, 'plugins'),
-    ignorePattern: /require-auth|cache|postgres/,
+    ignorePattern: /require-auth|cache|postgres|metrics/,
     options: {},
   });
 
   fastify.register(requireAuth, {
     jwtOptions: {
-      secret:        authCfg.jwt.secret,
-      expiry:        authCfg.jwt.expiry,
-      refreshSecret: authCfg.jwt.refreshSecret,
-      refreshExpiry: authCfg.jwt.refreshExpiry,
+      privateKey:        authCfg.jwt.privateKey,
+      publicKey:         authCfg.jwt.publicKey,
+      expiry:            authCfg.jwt.expiry,
+      refreshPrivateKey: authCfg.jwt.refreshPrivateKey,
+      refreshPublicKey:  authCfg.jwt.refreshPublicKey,
+      refreshExpiry:     authCfg.jwt.refreshExpiry,
     },
   });
+
+  fastify.register(loginEdDSA);
 
   fastify.register(AutoLoad, {
     dir: path.join(__dirname, 'routes'),
